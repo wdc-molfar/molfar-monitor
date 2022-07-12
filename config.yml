@@ -1,0 +1,36 @@
+# @molfar-monitor  - RESTfull service for managing molfar-nodes
+# @molfar-monitor configuration file
+
+# FOR READING CONFIG FILE USE ./src/javascript/utils/config
+# FOR EXAMPLE
+# 
+#   const config = require("./src/javascript/utils/yaml-config")("config.yml")
+# 
+# ALL STRING VALUES EVALUATES AS JS    
+
+
+
+# RESTfull service endpoints settings  
+service:
+  mode: process.env.NODE_ENV || "development"
+  port: process.env.PORT || 3002
+  host: process.env.HOST || "localhost"
+  usePort: process.env.USE_PORT || false
+
+
+#  RabbitMQ settings for microservice metrics listener
+metrics:
+  amqp:
+      url: process.env.METRICS_AMQP_URL || "amqps://xoilebqg:Nx46t4t9cxQ2M0rF2rIyZPS_xbAhmJIG@hornet.rmq.cloudamqp.com/xoilebqg"
+  queue:
+      name: process.env.METRICS_AMQP_QUEUE_NAME || "metrics"
+      exchange:
+          name: process.env.METRICS_AMQP_EXCHANGE_NAME || "metrics"
+          mode: fanout
+          options:
+              durable: true
+              persistent: true
+      options:
+          noAck: false 
+          exclusive: false   
+        

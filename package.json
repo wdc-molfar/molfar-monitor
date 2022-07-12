@@ -16,7 +16,7 @@
     "docs:gh-pages": "./gh-pages.sh"
   },
   "dependencies": {
-    "@molfar/amqp-client": "github:wdc-molfar/amqp-client",
+    "@molfar/service-chassis": "github:wdc-molfar/service-chassis",
     "axios": "^0.26.1",
     "body-parser": "1.19.0",
     "cookie-parser": "1.4.5",
@@ -26,6 +26,8 @@
     "guid": "0.0.12",
     "js-yaml": "^4.1.0",
     "lodash": "^4.17.21",
+    "moment": "^2.29.4",
+    "simpl.db": "^2.10.2",
     "swagger-stats": "^0.99.2",
     "swagger-ui-express": "^4.4.0",
     "yamljs": "^0.3.0"
