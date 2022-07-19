@@ -2,7 +2,7 @@ const bodyParser = require('body-parser')
 const express = require('express')
 const CORS = require("cors")
 const swaggerUi = require('swagger-ui-express');
-const config  = require('../../config')
+const config  = require("./util/yaml-config.js")("config.yml")
 const YAML = require('yamljs');
 const swStats = require('swagger-stats');
 const swaggerDocument = YAML.load('./oas.yaml')
@@ -25,7 +25,7 @@ app.use(bodyParser.urlencoded({
         extended: true
     }));
 
-const container = require("./util/container")
+//const container = require("./util/container")
 
 
 swaggerDocument.servers[0].url = process.env.HOST || config.service.host;
@@ -47,7 +47,7 @@ routes.forEach( route => {
 
 app.get("/", (req,res) => {
     res.writeHead(200, { 'Content-Type':'text/html'});
-	res.end(JSON.stringify({service: "MOLFAR-NODE"}))
+	res.end(JSON.stringify({service: "MOLFAR-MONITOR"}))
 })
 
 

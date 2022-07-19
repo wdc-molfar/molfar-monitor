@@ -1,12 +1,14 @@
-const app = require('./src/javascript');
-const http = require('http');
-const config = require('./config');
+const app = require('./src/javascript')
+const http = require('http')
+const config = require("./src/javascript/util/yaml-config.js")("config.yml")
+const nodeCron = require('node-cron');
+const {checkWebservice} = require('./src/javascript/services')
 
 
 /**
  * Get port from environment and store in Express.
  */
-const port = normalizePort(process.env.PORT || config.service.port || '8080');
+const port = normalizePort(process.env.PORT || config.service.port || '8080')
 app.set('port', port);
 
 /**
@@ -24,7 +26,13 @@ const server = http.createServer(app);
 		server.listen(port);
 		server.on('error', onError);
 		server.on('listening', onListening);
-		
+
+		nodeCron.schedule(config.service.cron, () => {
+      // This job will run every second
+      checkWebservice()
+      // for test
+      //console.log(new Date().toLocaleTimeString());
+    })
 	})
 
 
@@ -32,19 +40,19 @@ const server = http.createServer(app);
  * Normalize a port into a number, string, or false.
  */
 function normalizePort(val) {
-  const port = parseInt(val, 10);
+  const port = parseInt(val, 10)
 
   if (isNaN(port)) {
     // named pipe
-    return val;
+    return val
   }
 
   if (port >= 0) {
     // port number
-    return port;
+    return port
   }
 
-  return false;
+  return false
 }
 
 /**
@@ -52,7 +60,7 @@ function normalizePort(val) {
  */
 function onError(error) {
   if (error.syscall !== 'listen') {
-    throw error;
+    throw error
   }
 
   const bind = typeof port === 'string' ? `Pipe ${port}` : `Port ${port}`;
@@ -78,7 +86,7 @@ function onError(error) {
 function onListening() {
   const addr = server.address();
   const bind = typeof addr === 'string' ? `pipe ${addr}` : `port ${addr.port}`;
-  console.debug(`!!!MOLFAR-NODE SERVICE for starts on ${bind} in ${config.service.mode} mode.`);
+  console.debug(`!!!  MOLFAR-Monitor SERVICE for starts on ${bind} in ${config.service.mode} mode.`);
 }
 
 module.exports = server

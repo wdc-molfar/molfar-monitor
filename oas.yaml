@@ -1,0 +1,508 @@
+openapi: "3.0.2"
+
+
+info: 
+  
+  title: "MOLFAR-NODE. Мікросервісний контейнер, керований RESTfull сервісом"
+  
+  description: "Надає можливості управління та запуску сервісів з використанням RESTfull"
+  
+  version: "1.0.1"
+  
+  contact:
+    name: "molfar-node"
+    url: "http://localhost:3001/"
+    email: "boldak.andrey@gmail.com"
+  
+  license: 
+    name: "MIT License"
+    url: "http://localhost:8080/license.html"
+
+servers:
+  - url: "http://localhost:8080"
+    description: "Локальне розроблення"
+    
+
+components:
+  
+  parameters:
+    id_in_path:
+      name: id
+      description: "Ідентифікатор"
+      required: true
+      in: path
+      schema:
+        type: string
+      example: b8c821c8-8a82-4ae2-8b6b-780df554e70d
+  
+  schemas:
+  
+      
+    id_data_type:
+      
+      title: "Ідентифікатор"
+      description: "Ідентифікатор сервісу"     
+      type: object
+      required:
+        - id
+      properties:
+        id: 
+          description: "Ідентифікатор"
+          type: string
+  
+    res_state_type:
+
+      title: "Тип даних про стан контейнера"
+      description: "Описує структуру даних, які передаються у відповідь на запит про стан контейнера"
+      type: object
+      properties:
+        type:
+          description: "Назва сервісу"
+          type: string
+        uri:
+          description: "URL для доступу"
+          type: string 
+        instance:
+          description: "Ідентифікатор контейнера"
+          type: string    
+        startedAt:
+          description: "Дата і час запуску контейнера"
+          type: string 
+        microservices:
+          description: "Ідентифікатори запущених мікросервісів"
+          type: array
+          items:
+            type: string   
+    
+    req_repo_id_type:
+
+      title: "Тип даних для обміну з сервісом."
+      description: "Описує структуру даних, яка передається в сервіс шлях до репозиторію та його ідентифікатор."
+      type: object
+      required:
+        - id
+        - repo
+      properties:
+        id:
+          description: "Ідентифікатор"
+          type: string
+        repo:
+          description: "Шлях до репозиторію"
+          type: string  
+
+    req_service_id_type:
+
+      title: "Тип даних для обміну з сервісом."
+      description: "Описує структуру даних, яка передається в контейнер конфігурацію сервісу та його ідентифікатор."
+      type: object
+      required:
+        - id
+        - service
+      properties:
+        id:
+          description: "Ідентифікатор"
+          type: string
+        service:
+          description: "Конфігурація"
+          type: string
+
+    req_service_type:
+
+      title: "Тип даних для обміну з сервісом."
+      description: "Описує структуру даних, яка передається в контейнер конфігурацію сервісу."
+      type: object
+      required:
+        - service
+      properties:
+        service:
+          description: "Конфігурація"
+          type: string
+
+    req_repo_type:
+
+      title: "Тип даних для обміну з сервісом."
+      description: "Описує структуру даних, яка передається в контейнер шлях до репозиторію."
+      type: object
+      required:
+        - repo
+      properties:
+        repo:
+          description: "Шлях до репозиторію"
+          type: string
+
+    response_error_type:
+      title: "Помилкова відповідь"
+      type: object
+      required:
+        - message    
+      properties:
+        message:
+          description: "Повідомлення про помилку"
+          type: string
+
+    
+paths:
+
+  /:
+    get: 
+      
+      summary: "Отримати загальний опис сервісу"
+      description: "Повертає сторінку загального опису"
+      tags: 
+        - "Загальна інформація"
+      
+      responses:
+        200: 
+          description: "Успішна відповідь"
+          content:
+            text/html:
+              schema:
+                type: "string"
+              example: "Not found" 
+
+  /state:
+    get:
+      summary: "Отримати стан сервісу"
+      description: "Повертає інформацію, щодо стану та працездатності сервісу"
+      tags: 
+        - "Інформація щодо сервісу"
+      responses:
+        200: 
+          description: "Успішна відповідь"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/res_state_type"
+              example:
+                  type: "@molfar/molfar-node"
+                  uri: "http://localhost"    
+                  instance: "b8c821c8-8a82-4ae2-8b6b-780df554e70d" 
+                  startedAt: "2022-06-28T07:46:19.870Z"  
+                  microservices: []
+  
+  /deploy/{id}:
+    post:
+      summary: "Завантажити сервіс в контейнер"
+      description: "Повертає результат завантаження сервісу в контейнер"
+      tags: 
+        - "Завантаження сервісів"
+      parameters:
+        - $ref: "#/components/parameters/id_in_path" 
+      requestBody:
+        content:
+          application/json:
+            schema: 
+              $ref: "#/components/schemas/req_repo_type"
+
+      responses:
+        200: 
+          description: "Відповідь сервісу"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/res_state_type"
+                example:
+                  type: "@molfar/molfar-node"
+                  uri: "http://localhost"    
+                  instance: "b8c821c8-8a82-4ae2-8b6b-780df554e70d" 
+                  startedAt: "2022-06-28T07:46:19.870Z"  
+                  microservices: [] 
+        400:
+          description: "Відповідь сервісу у разі помилки"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/response_error_type"    
+
+  /deploy:
+    post:
+      summary: "Завантажити сервіс в контейнер"
+      description: "Повертає результат завантаження сервісу в контейнер"
+      tags: 
+        - "Завантаження сервісів" 
+      requestBody:
+        content:
+          application/json:
+            schema: 
+              $ref: "#/components/schemas/req_repo_id_type"
+
+      responses:
+        200: 
+          description: "Відповідь сервісу"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/res_state_type"
+                example:
+                  type: "@molfar/molfar-node"
+                  uri: "http://localhost"    
+                  instance: "b8c821c8-8a82-4ae2-8b6b-780df554e70d" 
+                  startedAt: "2022-06-28T07:46:19.870Z"  
+                  microservices: [] 
+        400:
+          description: "Відповідь сервісу у разі помилки"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/response_error_type"                     
+  
+  /start/{id}:
+    post:
+      summary: "Запуск сервісу в контейнері"
+      description: "Повертає результат запуску сервісу в контейнері"
+      tags: 
+        - "Запуск сервісів"
+      parameters:
+        - $ref: "#/components/parameters/id_in_path" 
+      requestBody:
+        content:
+          application/json:
+            schema: 
+              $ref: "#/components/schemas/req_service_type"
+
+      responses:
+        200: 
+          description: "Відповідь сервісу"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/res_state_type"
+                example:
+                  type: "@molfar/molfar-node"
+                  uri: "http://localhost"    
+                  instance: "b8c821c8-8a82-4ae2-8b6b-780df554e70d" 
+                  startedAt: "2022-06-28T07:46:19.870Z"  
+                  microservices: [] 
+        400:
+          description: "Відповідь сервісу у разі помилки"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/response_error_type"    
+
+  /start:
+    post:
+      summary: "Запуск сервісу в контейнері"
+      description: "Повертає результат запуску сервісу в контейнері"
+      tags: 
+        - "Запуск сервісів"  
+      requestBody:
+        content:
+          application/json:
+            schema: 
+              $ref: "#/components/schemas/req_service_id_type"
+
+      responses:
+        200: 
+          description: "Відповідь сервісу"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/res_state_type"
+                example:
+                  type: "@molfar/molfar-node"
+                  uri: "http://localhost"    
+                  instance: "b8c821c8-8a82-4ae2-8b6b-780df554e70d" 
+                  startedAt: "2022-06-28T07:46:19.870Z"  
+                  microservices: [] 
+        400:
+          description: "Відповідь сервісу у разі помилки"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/response_error_type"   
+
+
+  /undeploy/{id}:
+    post:
+      summary: "Вивантажити сервіс з контейнера"
+      description: "Повертає результат вивантаження сервісу з контейнера"
+      tags: 
+        - "Вивантаження сервісів"
+      parameters:
+        - $ref: "#/components/parameters/id_in_path" 
+
+      responses:
+        200: 
+          description: "Відповідь сервісу"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/res_state_type"
+                example:
+                  type: "@molfar/molfar-node"
+                  uri: "http://localhost"    
+                  instance: "b8c821c8-8a82-4ae2-8b6b-780df554e70d" 
+                  startedAt: "2022-06-28T07:46:19.870Z"  
+                  microservices: [] 
+        400:
+          description: "Відповідь сервісу у разі помилки"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/response_error_type"    
+
+  /undeploy:
+    post:
+      summary: "Вивантажити сервіс з контейнера"
+      description: "Повертає результат вивантаження сервісу з контейнера"
+      tags: 
+        - "Вивантаження сервісів"
+      requestBody:
+        content:
+          application/json:
+            schema: 
+              $ref: "#/components/schemas/id_data_type"
+
+      responses:
+        200: 
+          description: "Відповідь сервісу"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/res_state_type"
+                example:
+                  type: "@molfar/molfar-node"
+                  uri: "http://localhost"    
+                  instance: "b8c821c8-8a82-4ae2-8b6b-780df554e70d" 
+                  startedAt: "2022-06-28T07:46:19.870Z"  
+                  microservices: [] 
+        400:
+          description: "Відповідь сервісу у разі помилки"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/response_error_type"  
+
+
+  /terminate/{id}:
+    post:
+      summary: "Завершити сервіс в контейнері"
+      description: "Повертає результат завершення сервісу в контейнері"
+      tags: 
+        - "Виключення сервісів"
+      parameters:
+        - $ref: "#/components/parameters/id_in_path" 
+
+      responses:
+        200: 
+          description: "Відповідь сервісу"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/res_state_type"
+                example:
+                  type: "@molfar/molfar-node"
+                  uri: "http://localhost"    
+                  instance: "b8c821c8-8a82-4ae2-8b6b-780df554e70d" 
+                  startedAt: "2022-06-28T07:46:19.870Z"  
+                  microservices: [] 
+        400:
+          description: "Відповідь сервісу у разі помилки"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/response_error_type"    
+
+  /terminate:
+    post:
+      summary: "Завершити сервіс в контейнері"
+      description: "Повертає результат завершення сервісу в контейнері"
+      tags: 
+        - "Виключення сервісів"
+      requestBody:
+        content:
+          application/json:
+            schema: 
+              $ref: "#/components/schemas/id_data_type"
+
+      responses:
+        200: 
+          description: "Відповідь сервісу"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/res_state_type"
+                example:
+                  type: "@molfar/molfar-node"
+                  uri: "http://localhost"    
+                  instance: "b8c821c8-8a82-4ae2-8b6b-780df554e70d" 
+                  startedAt: "2022-06-28T07:46:19.870Z"  
+                  microservices: [] 
+        400:
+          description: "Відповідь сервісу у разі помилки"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/response_error_type" 
+
+  /config/{id}:
+    post:
+      summary: "Налаштування сервісу в контейнері"
+      description: "Повертає результат налаштування сервісу в контейнері"
+      tags: 
+        - "Налаштування сервісів" 
+      parameters:
+        - $ref: "#/components/parameters/id_in_path" 
+      requestBody:
+        content:
+          application/json:
+            schema: 
+              $ref: "#/components/schemas/req_service_type"
+
+      responses:
+        200: 
+          description: "Відповідь сервісу"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/res_state_type"
+                example:
+                  type: "@molfar/molfar-node"
+                  uri: "http://localhost"    
+                  instance: "b8c821c8-8a82-4ae2-8b6b-780df554e70d" 
+                  startedAt: "2022-06-28T07:46:19.870Z"  
+                  microservices: [] 
+        400:
+          description: "Відповідь сервісу у разі помилки"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/response_error_type"    
+
+  /config:
+    post:
+      summary: "Налаштування сервісу в контейнері"
+      description: "Повертає результат налаштування сервісу в контейнері"
+      tags: 
+        - "Налаштування сервісів"
+      requestBody:
+        content:
+          application/json:
+            schema: 
+              $ref: "#/components/schemas/req_service_id_type"
+
+      responses:
+        200: 
+          description: "Відповідь сервісу"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/res_state_type"
+                example:
+                  type: "@molfar/molfar-node"
+                  uri: "http://localhost"    
+                  instance: "b8c821c8-8a82-4ae2-8b6b-780df554e70d" 
+                  startedAt: "2022-06-28T07:46:19.870Z"  
+                  microservices: [] 
+        400:
+          description: "Відповідь сервісу у разі помилки"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/response_error_type"  
+
+  
+                  
+  
+  

@@ -1,10 +1,16 @@
 
 const YAML = require("js-yaml")
-const container = require("./util/container")
+const container = require("./util/local-container")
 const {v4} = require("uuid")
-const {extend} = require("lodash")
+const {extend, find} = require("lodash")
+const config  = require("./util/yaml-config.js")("config.yml")
+const logger = require('./util/logger.js').logger
+const requestIp = require('request-ip');
 
 const {
+    getStatusWebservice,
+    holdWebservice,
+    unholdWebservice,
     deployMicroservice,
     startMicroservice,
     setMicroserviceConfig,
@@ -43,6 +49,129 @@ const sendResponse = (req, res) => {
     } 
 
 }
+/**
+ * @param {Object} req
+ * @param {String} req.output Формат відповіді від сервісу 
+ * @param {Object} res
+ * @return {Promise}
+ */
+ const sendInstanceResponse = async (req, res) => {
+    const clientIp = requestIp.getClientIp(req)
+    try{
+        let p = getRequestParams(req)
+        const id   = p.id
+        if(!id){
+            logger.error(`Error Id incorrect from ${clientIp}`)
+            res.status(400).send({
+                message: "Id incorrect"
+            })
+            return 
+        }
+        getStatusWebservice(id)
+            .then(value =>{
+                res.send(value)
+            })
+            .catch(value =>{
+                res.send(value)
+            })
+    }catch (e) {
+        logger.error(`Error ${e} from ${clientIp}`)
+        res.status(400).send({
+            message: e.toString()
+        })
+    }
+
+}
+/**
+ * @param {Object} req
+ * @param {String} req.uri  uri сервісу
+ * @param {String} req.token token для аутентифікації
+ * @param {String} req.instance id сервісу
+ * @param {Object} res
+ * @return {Promise}
+ */
+const registerWebservice = async (req, res) => {
+    const clientIp = requestIp.getClientIp(req)
+    try{
+        let p = getRequestParams(req)
+        const token = p.token
+        const uri   = p.uri
+        const instance  = p.instance 
+        if(token == undefined || uri == undefined || instance == undefined){
+            res.status(400).send({
+                message: 'Required parameters is undefined'
+            })
+            logger.error(`Required parameters is undefined from ${clientIp}`)
+            return
+        }
+        if(token != config.service.token){
+            res.status(400).send({
+                message: 'Token is incorrect'
+            })
+            logger.error(`Token is incorrect from request ${clientIp}`)
+            return
+        }
+        holdWebservice(instance, uri)
+        res.status(200).send({
+            message: 'Success'
+        })
+        logger.info(`Webservice with uri: ${uri}, instance: ${instance} reqister success from ${clientIp}`)
+
+    }catch (e) {
+        logger.error(`Error ${e} from ${clientIp}`)
+        res.status(400).send({
+            message: e.toString()
+        })
+    }
+}
+
+/**
+ * @param {Object} req
+ * @param {String} req.token token для аутентифікації
+ * @param {String} req.instance id сервісу
+ * @param {Object} res
+ * @return {Promise}
+ */
+ const unregisterWebservice = async (req, res) => {
+    const clientIp = requestIp.getClientIp(req)
+    try{
+        let p = getRequestParams(req)
+        const token = p.token
+        const instance  = p.instance 
+        if(token == undefined || instance == undefined){
+            res.status(400).send({
+                message: 'Required parameters is undefined'
+            })
+            logger.error(`Required parameters is undefined from ${clientIp}`)
+            return
+        }
+        if(token != config.service.token){
+            res.status(400).send({
+                message: 'Token is incorrect'
+            })
+            logger.error(`Token is incorrect from request ${clientIp}`)
+            return
+        }
+        if(!find(container().state.webservices, m => m.id == instance)){
+            res.status(400).send({
+                message: `Instance with id ${instance} not found`
+            })
+            logger.error(`Instance with id ${instance} not found from request ${clientIp}`)
+            return 
+        }
+        unholdWebservice(instance)
+        res.status(200).send({
+            message: 'Success'
+        })
+        logger.info(`Webservice instance: ${instance} unreqister success from ${clientIp}`)
+
+    }catch (e) {
+        logger.error(`Error ${e} from ${clientIp}`)
+        res.status(400).send({
+            message: e.toString()
+        })
+    }
+}
 
 
 /**
@@ -72,7 +201,7 @@ const deployMicroserviceHandler = async (req, res) => {
 
 /**
  * @param {Object} req
- * @param {String} req.id  Ідентифікатор сервісу, для запуску
+ * @param {String} req.id      Ідентифікатор сервісу, для запуску
  * @param {String} req.service Конфігурація для сервісу
  * @param {Object} res
  * @return {Promise}
@@ -160,51 +289,27 @@ module.exports = [
         path: "/state",
         handler: sendResponse
     },
-    /*
     {
         method: "post",
-        path: "/state",
-        handler: sendResponse
+        path: "/register",
+        handler: registerWebservice
     },
-
+    {
+        method: "post",
+        path: "/unregister",
+        handler: unregisterWebservice
+    },
+    
     {
         method: "get",
-        path: "/deploy/:id",
-        handler: deployMicroserviceHandler
+        path: "/state/:id",
+        handler: sendInstanceResponse
     },
-    */
-    /*
-    {
-        method: "get",
-        path: "/deploy",
-        handler: deployMicroserviceHandler
-    },
-    */
     {
         method: "post",
         path: "/deploy/:id",
         handler: deployMicroserviceHandler
     },
-   
-    {
-        method: "post",
-        path: "/deploy",
-        handler: deployMicroserviceHandler
-    },
-    /*
-    {
-        method: "get",
-        path: "/undeploy/:id",
-        handler: undeployMicroserviceHandler
-    },
-    */
-    /*
-    {
-        method: "get",
-        path: "/undeploy",
-        handler: undeployMicroserviceHandler
-    },
-    */
     {
         method: "post",
         path: "/undeploy/:id",
@@ -212,55 +317,95 @@ module.exports = [
     },
     {
         method: "post",
-        path: "/undeploy",
-        handler: undeployMicroserviceHandler
-    },
-    {
-        method: "post",
-        path: "/start",
-        handler: startMicroserviceHandler
-    },
-    {
-        method: "post",
         path: "/start/:id",
         handler: startMicroserviceHandler
     },
-    /*
-    {
-        method: "get",
-        path: "/start",
-        handler: startMicroserviceHandler
-    },
-
-    {
-        method: "get",
-        path: "/start/:id",
-        handler: startMicroserviceHandler
-    },
-    */
-    {
-        method: "post",
-        path: "/config",
-        handler: setMicroserviceConfigHandler
-    },
-
     {
         method: "post",
         path: "/config/:id",
         handler: setMicroserviceConfigHandler
     },
-    
-    {
-        method: "post",
-        path: "/terminate",
-        handler: terminateMicroserviceHandler
-    },
-    
     {
         method: "post",
         path: "/terminate/:id",
         handler: terminateMicroserviceHandler
     },
+    /*
+    {
+        method: "get",
+        path: "/deploy/:id",
+        handler: deployMicroserviceHandler
+    },
+    */
+    /*
+    {
+        method: "get",
+        path: "/deploy",
+        handler: deployMicroserviceHandler
+    },
+    */
+    
+   /*
+    {
+        method: "post",
+        path: "/deploy",
+        handler: deployMicroserviceHandler
+    },
+    */
+    /*
+    {
+        method: "get",
+        path: "/undeploy/:id",
+        handler: undeployMicroserviceHandler
+    },
+    */
+    /*
+    {
+        method: "get",
+        path: "/undeploy",
+        handler: undeployMicroserviceHandler
+    },
+    */
+    /*
+    {
+        method: "post",
+        path: "/undeploy",
+        handler: undeployMicroserviceHandler
+    },
+    {
+        method: "post",
+        path: "/start",
+        handler: startMicroserviceHandler
+    },
+    */
+    /*
+    {
+        method: "get",
+        path: "/start",
+        handler: startMicroserviceHandler
+    },
+
+    {
+        method: "get",
+        path: "/start/:id",
+        handler: startMicroserviceHandler
+    },
+    */
+   /*
+    {
+        method: "post",
+        path: "/config",
+        handler: setMicroserviceConfigHandler
+    },
+    */
+  
+    /*
+    {
+        method: "post",
+        path: "/terminate",
+        handler: terminateMicroserviceHandler
+    },
+    */
     /*
     {
         method: "get",
