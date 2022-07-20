@@ -1,10 +1,16 @@
+
+const YAML = require('yamljs');
+
+
 const bodyParser = require('body-parser')
 const express = require('express')
 const CORS = require("cors")
 const swaggerUi = require('swagger-ui-express');
-const config  = require("./util/yaml-config.js")("config.yml")
-const YAML = require('yamljs');
 const swStats = require('swagger-stats');
+
+
+
+const config  = require("./util/yaml-config.js")("./config.yml")
 const swaggerDocument = YAML.load('./oas.yaml')
 
 const app = express();
@@ -25,15 +31,12 @@ app.use(bodyParser.urlencoded({
         extended: true
     }));
 
-//const container = require("./util/container")
-
 
 swaggerDocument.servers[0].url = process.env.HOST || config.service.host;
 swaggerDocument.servers[0].description = "";
 
 
-app.use(swStats.getMiddleware({swaggerSpec:swaggerDocument, uriPath:"/metrics", name:"@molfar/molfar-node"}))
-
+app.use(swStats.getMiddleware({swaggerSpec:swaggerDocument, uriPath:"/metrics", name:"@molfar/molfar-monitor"}))
 app.use('/swagger', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 

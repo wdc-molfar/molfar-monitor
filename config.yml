@@ -13,12 +13,12 @@
 # RESTfull service endpoints settings  
 service:
   mode: process.env.NODE_ENV || "development"
+  protocol: process.env.PROTOCOL || "http"
   port: process.env.PORT || 3002
   host: process.env.HOST || "localhost"
   usePort: process.env.USE_PORT || false
-  token: "XcaVRzKz2nQUd8pel7az"
-  protocol: http
-  cron: "1 * * * * *"
+  token: process.env.TOKEN || "XcaVRzKz2nQUd8pel7az"
+  # cron: "1 * * * * *"
 
 
 #  RabbitMQ settings for microservice metrics listener
@@ -35,5 +35,9 @@ metrics:
               persistent: true
       options:
           noAck: false 
-          exclusive: false   
+          exclusive: false
+
+node-monitor:
+  interval: process.env.NODE_MONITOR_INTERVAL || 6000
+  request: process.env.NODE_MONITOR_REQUEST || "/state"             
         
