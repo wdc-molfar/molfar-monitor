@@ -46,7 +46,7 @@ const onError = error => {
 /**
  * Event listener for HTTP server "listening" event.
  */
-const onListening => () => {
+const onListening = () => {
   const addr = server.address();
   const bind = typeof addr === 'string' ? `pipe ${addr}` : `port ${addr.port}`;
   console.debug(`!!!  MOLFAR-Monitor SERVICE starts on ${bind} in ${config.service.mode} mode.`);

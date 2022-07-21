@@ -1,32 +1,27 @@
-
-const YAML = require("js-yaml")
-const container = require("./util/local-container")
-const {v4} = require("uuid")
-const {extend, find} = require("lodash")
-const config  = require("./util/yaml-config.js")("config.yml")
-const logger = require('./util/logger.js').logger
+const YAML      = require("js-yaml")
+const { Nodes } = require("./util/db.js")
+const { extend }  = require("lodash")
+const config    = require("./util/yaml-config.js")("config.yml")
+const logger    = require('./util/logger.js').logger
 const requestIp = require('request-ip');
 
 const {
-    getStatusWebservice,
+    sendProxyRequest,
     holdWebservice,
-    unholdWebservice,
-    deployMicroservice,
-    startMicroservice,
-    setMicroserviceConfig,
-    terminateMicroservice,
-    undeployMicroservice
+    unholdWebservice
 } = require("./services")
 
 const getRequestParams = request => extend({}, request.params, request.query, request.body)
 
 const sanitizeState = state => {
-    
-    let res = extend({}, state)
-    // res.microservices.forEach( item => {
-    //     delete item.instance
-    // })
-    return res
+    if(state){
+        let res = extend({}, state)
+        // res.microservices.forEach( item => {
+        //     delete item.instance
+        // })
+        return res
+    }
+    return {}
 
 }
 
@@ -39,7 +34,7 @@ const sanitizeState = state => {
  */
 const sendResponse = (req, res) => {
 
-    let data = sanitizeState(container().state)
+    let data = sanitizeState(Nodes.get())
     let p = getRequestParams(req)
     let format = p.output || "json"
     if( format == "yaml" || format == "yml") {
@@ -59,7 +54,7 @@ const sendResponse = (req, res) => {
     const clientIp = requestIp.getClientIp(req)
     try{
         let p = getRequestParams(req)
-        const id   = p.id
+        const id  = p.id
         if(!id){
             logger.error(`Error Id incorrect from ${clientIp}`)
             res.status(400).send({
@@ -67,7 +62,7 @@ const sendResponse = (req, res) => {
             })
             return 
         }
-        getStatusWebservice(id)
+        sendProxyRequest(id, '/state', 'get')
             .then(value =>{
                 res.send(value)
             })
@@ -84,9 +79,9 @@ const sendResponse = (req, res) => {
 }
 /**
  * @param {Object} req
- * @param {String} req.uri  uri сервісу
- * @param {String} req.token token для аутентифікації
- * @param {String} req.instance id сервісу
+ * @param {String} req.uri      uri сервісу
+ * @param {String} req.token    token для аутентифікації
+ * @param {String} req.instance Ідентифікатор ноди
  * @param {Object} res
  * @return {Promise}
  */
@@ -127,8 +122,8 @@ const registerWebservice = async (req, res) => {
 
 /**
  * @param {Object} req
- * @param {String} req.token token для аутентифікації
- * @param {String} req.instance id сервісу
+ * @param {String} req.token    token для аутентифікації
+ * @param {String} req.instance Ідентифікатор ноди
  * @param {Object} res
  * @return {Promise}
  */
@@ -136,7 +131,7 @@ const registerWebservice = async (req, res) => {
     const clientIp = requestIp.getClientIp(req)
     try{
         let p = getRequestParams(req)
-        const token = p.token
+        const token     = p.token
         const instance  = p.instance 
         if(token == undefined || instance == undefined){
             res.status(400).send({
@@ -152,7 +147,8 @@ const registerWebservice = async (req, res) => {
             logger.error(`Token is incorrect from request ${clientIp}`)
             return
         }
-        if(!find(container().state.webservices, m => m.id == instance)){
+        let items = Nodes.get(m => m.instance == instance)
+        if(!items || items.length == 0){
             res.status(400).send({
                 message: `Instance with id ${instance} not found`
             })
@@ -176,21 +172,48 @@ const registerWebservice = async (req, res) => {
 
 /**
  * @param {Object} req
- * @param {String} req.id  Ідентифікатор сервісу, для завантаження
+ * @param {String} req.id       Ідентифікатор ноди
+ * @param {String} req.instance Ідентифікатор сервісу, для завантаження
  * @param {String} req.repo
  * @param {Object} res
  * @return {Promise}
  */
 const deployMicroserviceHandler = async (req, res) => {
+    const clientIp = requestIp.getClientIp(req)
     try {
-
         let p = getRequestParams(req)
-        let id = p.id || v4()
-        let repo = p.repo
-
-        await deployMicroservice(id,repo)
-        sendResponse(req, res)    
-
+        const repo      = p.repo
+        const instance  = p.instance 
+        const id        = p.id
+        if(!id){
+            logger.error(`Error Id incorrect from ${clientIp}`)
+            res.status(400).send({
+                message: "Id incorrect"
+            })
+            return 
+        }
+        if(!repo){
+            res.status(400).send({
+                message: 'Required parameter "repo" is undefined'
+            })
+            logger.error(`Required parameter "repo" is undefined from ${clientIp}`)
+            return
+        }
+        let data = {
+            repo
+        }
+        if(instance){
+            data['id'] = instance
+        }
+        
+        sendProxyRequest(id, '/deploy', 'post', data)
+        .then(value =>{
+            res.send(value)
+        })
+        .catch(value =>{
+            res.send(value)
+        })
+    
     } catch (e) {
         res.status(400).send({
             message: e.toString()
@@ -201,17 +224,44 @@ const deployMicroserviceHandler = async (req, res) => {
 
 /**
  * @param {Object} req
- * @param {String} req.id      Ідентифікатор сервісу, для запуску
- * @param {String} req.service Конфігурація для сервісу
+ * @param {String} req.id       Ідентифікатор ноди
+ * @param {String} req.instance Ідентифікатор сервісу, для запуску
+ * @param {String} req.service  Конфігурація для сервісу
  * @param {Object} res
  * @return {Promise}
  */
 const startMicroserviceHandler = async (req, res) => {
+    const clientIp = requestIp.getClientIp(req)
     try {
-
         let p = getRequestParams(req)
-        await startMicroservice(p.id, {service: p.service})
-        sendResponse(req, res)   
+        const id        = p.id
+        if(!id){
+            logger.error(`Error Id incorrect from ${clientIp}`)
+            res.status(400).send({
+                message: "Id incorrect"
+            })
+            return 
+        }
+        const instance  = p.instance
+        const service   = p.service 
+        if(!instance || !service){
+            res.status(400).send({
+                message: 'Required parameters is undefined'
+            })
+            logger.error(`Required parameters is undefined from ${clientIp}`)
+            return
+        }
+        let data = {
+            id: instance,
+            service
+        }
+        sendProxyRequest(id, '/start', 'post', data)
+        .then(value =>{
+            res.send(value)
+        })
+        .catch(value =>{
+            res.send(value)
+        }) 
     } catch (e) {
         res.status(400).send({
             message: e.toString()
@@ -222,16 +272,42 @@ const startMicroserviceHandler = async (req, res) => {
 
 /**
  * @param {Object} req
- * @param {String} req.id  Ідентифікатор сервісу, для зупинки
+ * @param {String} req.id  Ідентифікатор ноди
+ * @param {String} req.instance  Ідентифікатор сервісу, для зупинки
  * @param {Object} res
  * @return {Promise}
  */
 const terminateMicroserviceHandler = async (req, res) => {
+    const clientIp = requestIp.getClientIp(req)
     try {
     
         let p = getRequestParams(req)
-        await terminateMicroservice(p.id)
-        sendResponse(req, res)   
+        const id        = p.id
+        if(!id){
+            logger.error(`Error Id incorrect from ${clientIp}`)
+            res.status(400).send({
+                message: "Id incorrect"
+            })
+            return 
+        }
+        const instance  = p.instance
+        if(!instance){
+            res.status(400).send({
+                message: 'Required parameters is undefined'
+            })
+            logger.error(`Required parameters is undefined from ${clientIp}`)
+            return
+        }
+        let data = {
+            id: instance
+        }
+        sendProxyRequest(id, '/terminate', 'post', data)
+        .then(value =>{
+            res.send(value)
+        })
+        .catch(value =>{
+            res.send(value)
+        })    
     } catch (e) {
         res.status(400).send({
             message: e.toString()
@@ -243,16 +319,42 @@ const terminateMicroserviceHandler = async (req, res) => {
 
 /**
  * @param {Object} req
- * @param {String} req.id  Ідентифікатор сервісу, для вивантаження
+ * @param {String} req.id        Ідентифікатор ноди
+ * @param {String} req.instance  Ідентифікатор сервісу, для вивантаження
  * @param {Object} res
  * @return {Promise}
  */
 const undeployMicroserviceHandler = async (req, res) => {
+    const clientIp = requestIp.getClientIp(req)
     try {
     
         let p = getRequestParams(req)
-        await undeployMicroservice(p.id)
-        sendResponse(req, res)   
+        const id        = p.id
+        if(!id){
+            logger.error(`Error Id incorrect from ${clientIp}`)
+            res.status(400).send({
+                message: "Id incorrect"
+            })
+            return 
+        }
+        const instance  = p.instance
+        if(!instance){
+            res.status(400).send({
+                message: 'Required parameters is undefined'
+            })
+            logger.error(`Required parameters is undefined from ${clientIp}`)
+            return
+        }
+        let data = {
+            id: instance
+        }
+        sendProxyRequest(id, '/undeploy', 'post', data)
+        .then(value =>{
+            res.send(value)
+        })
+        .catch(value =>{
+            res.send(value)
+        })   
     } catch (e) {
         res.status(400).send({
             message: e.toString()
@@ -263,17 +365,45 @@ const undeployMicroserviceHandler = async (req, res) => {
 
 /**
  * @param {Object} req
- * @param {String} req.id  Ідентифікатор сервісу, для налашування
- * @param {String} req.service  Конфігурація для сервісу
+ * @param {String} req.id        Ідентифікатор ноди
+ * @param {String} req.instance  Ідентифікатор сервісу, для налашування
+ * @param {String} req.service   Конфігурація для сервісу
  * @param {Object} res
  * @return {Promise}
  */
 const setMicroserviceConfigHandler = (req, res) => {
+    const clientIp = requestIp.getClientIp(req)
     try {
-        
+
         let p = getRequestParams(req)
-        setMicroserviceConfig( p.id, {service: p.service} )
-        sendResponse(req, res)    
+        const id        = p.id
+        if(!id){
+            logger.error(`Error Id incorrect from ${clientIp}`)
+            res.status(400).send({
+                message: "Id incorrect"
+            })
+            return 
+        }
+        const instance  = p.instance
+        const service   = p.service 
+        if(!instance || !service){
+            res.status(400).send({
+                message: 'Required parameters is undefined'
+            })
+            logger.error(`Required parameters is undefined from ${clientIp}`)
+            return
+        }
+        let data = {
+            id: instance,
+            service
+        }
+        sendProxyRequest(id, '/config', 'post', data)
+        .then(value =>{
+            res.send(value)
+        })
+        .catch(value =>{
+            res.send(value)
+        })    
         
     } catch (e) {
         res.status(400).send({
