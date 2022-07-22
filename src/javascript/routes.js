@@ -1,5 +1,5 @@
 const YAML        = require("js-yaml")
-const { Nodes }   = require("./util/db.js")
+const { Nodes, Metrics }   = require("./util/db.js")
 const { extend }  = require("lodash")
 const config      = require("./util/yaml-config.js")("config.yml")
 const logger      = require('./util/logger.js').logger
@@ -310,10 +310,9 @@ const terminateMicroserviceHandler = async (req, res) => {
 }
 
 
-/**
+/** 
  * @param {Object} req
  * @param {String} req.id        Ідентифікатор сервісу, для вивантаження
- * @param {String} req.instance  Ідентифікатор ноди 
  * @param {Object} res
  * @return {Promise}
  */
@@ -406,6 +405,36 @@ const setMicroserviceConfigHandler = (req, res) => {
     
 } 
 
+
+/** Повертає метрики стану мікросервісу
+ * @param {Object} req
+ * @param {String} req.id        Ідентифікатор мікросервісу, для налашування
+ * @param {Object} res
+ * @return {Promise}
+ */
+
+ const getMsMetrics = ( req, res ) => {
+    try {
+        let p = getRequestParams(req)
+        let result = Metrics.get( item => item.instance == p.id )
+        if(result){
+            res.send(result)    
+        } else {
+            res.status(400).send({
+                message: `Metrics for ms instance "${p.id}" not found`
+            })    
+        }
+        
+    } catch (e) {
+        res.status(400).send({
+            message: e.toString()
+        })
+    }   
+
+ }
+
+
+
 module.exports = [
     {
         method: "get",
@@ -453,6 +482,11 @@ module.exports = [
         path: "/ms/terminate/:id",
         handler: terminateMicroserviceHandler
     },
+    {
+        method: "get",
+        path: "/ms/metrics/:id",
+        handler: getMsMetrics
+    }
     /*
     {
         method: "get",
