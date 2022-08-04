@@ -1,0 +1,47 @@
+@startuml
+
+actor User as "Користувач"
+boundary App as "веб-застосунок\nita"
+participant AppServ as "Сервер\nвеб-застосунків"
+participant ItaServ as "Сервsc\njace-ita"
+control Train as "Модуль\nтренування"
+control Predict as "Модуль\nрозпізнавання"
+control Eval as "Модуль\nоцінювання"
+database DB as "База даних\nAtlas MongoDB\nDaaS"
+
+== Ініціалізація сервісу ==
+
+create Train
+ItaServ -> Train : <<CREATE>>
+create Predict 
+ItaServ -> Predict : <<CREATE>>
+create Eval
+ItaServ -> Eval : <<CREATE>>
+
+...
+
+User -> AppServ : доступ до\nвеб-застосунку
+create App
+AppServ --> App
+
+== Відновлення моделі ==
+
+App -> ItaServ : запит на\nвідновлення моделі
+ItaServ -> ItaServ : перевірка\nнаявності моделі 
+ItaServ -> DB : доступ до\nархіву моделі
+DB --> ItaServ : архів моделі
+ItaServ -> ItaServ : розгортання\nмоделі
+ItaServ --> App
+
+...
+
+== Опрацювання запиту на тренування ==
+
+User -> App : "Тренувати"
+App -> ItaServ : Запит на тренування
+ItaServ -> Train: Запит на тренування
+ItaServ <-- Train: Оцінки втрат
+App <-- ItaServ: Оцінки втрат
+
+
+@enduml

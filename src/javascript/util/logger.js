@@ -8,6 +8,7 @@
  const fse = require("fs-extra")
  const dir = './logs'
 
+ 
  const init =  () => {
     let logDir = path.resolve(dir)
     if(!fse.pathExistsSync(logDir)){

@@ -18,6 +18,7 @@ service:
   host: process.env.HOST || "localhost"
   usePort: process.env.USE_PORT || false
   token: process.env.TOKEN || "XcaVRzKz2nQUd8pel7az"
+  instance: process.env.INSTANCE || "dab17abb-188c-454b-a396"
   # cron: "1 * * * * *"
 
 

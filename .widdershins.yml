@@ -1,0 +1,12 @@
+# widdershins config
+# Convert Open API Spec to markdown
+
+language_tabs:
+  - http: HTTP
+  - javascript: JavaScript
+
+httpsnippet: true  
+
+language_clients: 
+  - shell: curl
+  - javascript: axios
