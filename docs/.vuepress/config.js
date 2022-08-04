@@ -15,7 +15,7 @@ module.exports = {
     }]
   ],
   port: 3030,
-  base: '/molfar-node/',
+  base: '/molfar-monitor/',
   theme: 'cool',
   // dest: 'dist',
   head: [

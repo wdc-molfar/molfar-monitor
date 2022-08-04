@@ -56,9 +56,9 @@
     "prism-themes": "^1.9.0",
     "split-file": "^2.2.1",
     "supertest": "^6.1.6",
-    "vuepress": "^0.14.11",
+    "vuepress": "^1.8.2",
     "vuepress-theme-cool": "^1.3.1",
-    "widdershins": "^2.3.0"
+    "widdershins": "^3.6.7"
   },
   "jest": {
     "testMatch": [
