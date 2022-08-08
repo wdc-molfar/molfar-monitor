@@ -1,5 +1,5 @@
 ---
-title: 'MOLFAR-NODE. Мікросервісний контейнер, керований RESTfull сервісом'
+title: 'MOLFAR-MONITOR. RESTfull-сервіс для моніторингу стану мікросервісів'
 language_tabs:
   - http: HTTP
   - javascript: JavaScript
@@ -11,17 +11,17 @@ headingLevel: 2
 
 ---
 
-<h1 id="molfar-node-restfull-">MOLFAR-NODE. Мікросервісний контейнер, керований RESTfull сервісом v1.0.1</h1>
+<h1 id="molfar-node-restfull-">MOLFAR-MONITOR. RESTfull-сервіс для моніторингу стану мікросервісів v1.0.1</h1>
 
 > Scroll down for code samples, example requests and responses. Select a language for code samples from the tabs above or the mobile navigation menu.
 
-Надає можливості управління та запуску сервісів з використанням RESTfull
+Надає можливості моніторингу стану мікросервісів з використанням RESTfull
 
 Base URLs:
 
 * <a href="http://localhost:8080">http://localhost:8080</a>
 
-Email: <a href="mailto:boldak.andrey@gmail.com">molfar-node</a> Web: <a href="http://localhost:3001/">molfar-node</a> 
+Email: <a href="mailto:boldak.andrey@gmail.com">molfar-monitor</a> Web: <a href="http://localhost:3001/">molfar-monitor</a> 
 License: <a href="http://localhost:8080/license.html">MIT License</a>
 
 <h1 id="molfar-node-restfull---">Загальна інформація</h1>
