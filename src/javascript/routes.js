@@ -190,7 +190,7 @@ const deployMicroserviceHandler = async (req, res) => {
             res.send(value)
         })
         .catch(value =>{
-            res.send(value)
+            res.status(400).send(value)
         })
     
     } catch (e) {
@@ -214,8 +214,8 @@ const startMicroserviceHandler = async (req, res) => {
     try {
         let p = getRequestParams(req)
         const instance        = p.instance
-        const id  = p.id
-        const service   = p.service 
+        const id              = p.id
+        const service         = p.service 
         if(id.length == 0 || service.length == 0){
             res.status(400).send({
                 message: 'Required parameters is undefined'
@@ -228,7 +228,7 @@ const startMicroserviceHandler = async (req, res) => {
             res.send(value)
         })
         .catch(value =>{
-            res.send(value)
+            res.status(400).send(value)
         }) 
     } catch (e) {
         res.status(400).send({

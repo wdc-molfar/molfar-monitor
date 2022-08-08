@@ -59,6 +59,61 @@ describe('Тести для шляху "/node"', () => {
 
     })
 
+    describe('Перевірка деплоя ноди', () =>{
+        test('Ідентифікатор ноди відсутній, код відповіді - 404', async () => {
+            let res = await request(app).post(`/node/deploy`)
+            expect(res.status).toEqual(404)
+        })
+        test('Невірний ідентифікатор ноди, код відповіді - 200', async () => {
+            let res = await request(app).post(`/node/deploy/${data.instance}ffff`)
+            expect(res.status).toEqual(200)
+        })
+    })
+
+    describe('Перевірка вивантаження ноди', () =>{
+        test('Ідентифікатор ноди відсутній, код відповіді - 404', async () => {
+            let res = await request(app).post(`/node/undeploy`)
+            expect(res.status).toEqual(404)
+        })
+        test('Невірний ідентифікатор ноди, код відповіді - 400', async () => {
+            let res = await request(app).post(`/node/undeploy/${data.instance}ffff`)
+            expect(res.status).toEqual(400)
+        })
+    })
+
+    describe('Запуск мікросервісу на ноді', () =>{
+        test('Ідентифікатор ноди відсутній, код відповіді - 404', async () => {
+            let res = await request(app).post(`/ms/start`)
+            expect(res.status).toEqual(404)
+        })
+        test('Невірний ідентифікатор ноди, код відповіді - 400', async () => {
+            let res = await request(app).post(`/ms/start/${data.instance}ffff`)
+            expect(res.status).toEqual(400)
+        })
+    })
+
+    describe('Налаштування мікросервісу на ноді', () =>{
+        test('Ідентифікатор ноди відсутній, код відповіді - 404', async () => {
+            let res = await request(app).post(`/ms/config`)
+            expect(res.status).toEqual(404)
+        })
+        test('Невірний ідентифікатор ноди, код відповіді - 400', async () => {
+            let res = await request(app).post(`/ms/config/${data.instance}ffff`)
+            expect(res.status).toEqual(400)
+        })
+    })
+
+    describe('Вивантеження мікросервісу на ноді', () =>{
+        test('Ідентифікатор ноди відсутній, код відповіді - 404', async () => {
+            let res = await request(app).post(`/ms/terminate`)
+            expect(res.status).toEqual(404)
+        })
+        test('Невірний ідентифікатор ноди, код відповіді - 200', async () => {
+            let res = await request(app).post(`/ms/terminate/${data.instance}ffff`)
+            expect(res.status).toEqual(200)
+        })
+    })
+
     describe('Отримання метрик ноди', () => {
         test('Невірний ідентифікатор ноди, код відповіді - 400', async () => {
             let res = await request(app).get(`/ms/metrics/${data.instance}ffff`)
